@@ -83,6 +83,4 @@ vercel dev
 
 Then open `http://localhost:3000`. Set your API key in a `.env.local` file:
 
-```
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
+
