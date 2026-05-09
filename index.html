@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petal — AI Virtual Pet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FFF8F0;
+    --soft-yellow: #FFE8A3;
+    --coral: #FF7B6B;
+    --lavender: #C5B8FF;
+    --mint: #A8E6CF;
+    --sky: #87CEEB;
+    --peach: #FFB347;
+    --rose: #FFB3BA;
+    --text-dark: #2D2D2D;
+    --text-mid: #5A5A7A;
+    --text-light: #9999BB;
+    --card-bg: rgba(255,255,255,0.92);
+    --border: rgba(180,160,255,0.25);
+    --shadow: 0 4px 20px rgba(100,80,180,0.12);
+    --shadow-lg: 0 8px 40px rgba(100,80,180,0.18);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: linear-gradient(160deg, #F0ECFF 0%, #FFF0F5 50%, #E8F5FF 100%);
+    min-height: 100vh;
+    color: var(--text-dark);
+  }
+  .app { max-width: 390px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen.active { display: flex; }
+
+  .onboard-bg {
+    background: linear-gradient(180deg, #E8E0FF 0%, #FFE8F0 100%);
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 24px; text-align: center;
+  }
+  .logo-text { font-family: 'Fredoka One', cursive; font-size: 42px; color: #6B4FCC; letter-spacing: 1px; }
+  .logo-sub { font-size: 15px; color: var(--text-mid); margin-top: 6px; font-weight: 600; }
+  .egg-anim { font-size: 100px; margin: 30px 0; animation: wobble 2s ease-in-out infinite; display: block; }
+  @keyframes wobble { 0%,100% { transform: rotate(-5deg) scale(1); } 50% { transform: rotate(5deg) scale(1.05); } }
+  .onboard-title { font-family: 'Fredoka One', cursive; font-size: 26px; color: var(--text-dark); margin-bottom: 10px; }
+  .onboard-desc { font-size: 14px; color: var(--text-mid); line-height: 1.7; margin-bottom: 32px; }
+  .btn-primary {
+    background: linear-gradient(135deg, #7B5FE8, #B845F5);
+    color: white; border: none; border-radius: 50px; padding: 16px 48px;
+    font-family: 'Nunito', sans-serif; font-size: 17px; font-weight: 800;
+    cursor: pointer; box-shadow: 0 6px 24px rgba(123,95,232,0.4);
+    transition: transform 0.15s, box-shadow 0.15s; letter-spacing: 0.3px;
+  }
+  .btn-primary:active { transform: scale(0.97); box-shadow: 0 3px 12px rgba(123,95,232,0.3); }
+
+  .create-screen { background: #FAFAFF; }
+  .create-header { background: linear-gradient(135deg, #7B5FE8, #B845F5); padding: 52px 24px 28px; color: white; text-align: center; }
+  .create-header h2 { font-family: 'Fredoka One', cursive; font-size: 26px; letter-spacing: 0.5px; }
+  .create-header p { font-size: 13px; opacity: 0.85; margin-top: 4px; font-weight: 600; }
+  .create-body { padding: 24px; flex: 1; overflow-y: auto; }
+  .preview-pet { text-align: center; margin-bottom: 24px; }
+  .pet-preview-emoji { font-size: 90px; animation: float 3s ease-in-out infinite; display: block; }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .species-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .species-card {
+    background: var(--card-bg); border: 2px solid transparent; border-radius: 16px;
+    padding: 12px 8px; text-align: center; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .species-card:hover { transform: translateY(-2px); }
+  .species-card.selected { border-color: #7B5FE8; background: #F0ECFF; }
+  .species-card .s-emoji { font-size: 32px; display: block; margin-bottom: 4px; }
+  .species-card .s-name { font-size: 11px; font-weight: 700; color: var(--text-mid); }
+  .field-label { font-size: 13px; font-weight: 700; color: var(--text-mid); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pet-name-input {
+    width: 100%; border: 2px solid var(--border); border-radius: 50px; padding: 14px 20px;
+    font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 700; color: var(--text-dark);
+    background: white; outline: none; transition: border-color 0.2s; margin-bottom: 20px;
+  }
+  .pet-name-input:focus { border-color: #7B5FE8; }
+  .personality-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .chip {
+    background: white; border: 2px solid var(--border); border-radius: 50px;
+    padding: 8px 16px; font-size: 12px; font-weight: 700; color: var(--text-mid);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .chip.selected { background: #F0ECFF; border-color: #7B5FE8; color: #6B4FCC; }
+  .create-cta { padding: 0 24px 32px; }
+
+  .home-screen { background: linear-gradient(180deg, #EDE6FF 0%, #FFF5FD 60%, #E8F5FF 100%); }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 52px 20px 16px; }
+  .greeting { font-size: 13px; font-weight: 700; color: var(--text-mid); }
+  .pet-name-top { font-family: 'Fredoka One', cursive; font-size: 20px; color: #5B3FBB; }
+  .top-icons { display: flex; gap: 12px; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.8);
+    border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.15s;
+  }
+  .icon-btn:active { transform: scale(0.92); }
+  .pet-scene { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+  .mood-badge {
+    background: rgba(255,255,255,0.9); border-radius: 50px; padding: 6px 16px;
+    font-size: 12px; font-weight: 800; color: var(--text-mid); margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08); border: 1px solid rgba(255,255,255,0.6);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .mood-dot { width: 8px; height: 8px; border-radius: 50%; background: #7B5FE8; }
+  .main-pet-wrap { position: relative; }
+  .main-pet-emoji {
+    font-size: 140px; display: block;
+    animation: petBounce 2.5s ease-in-out infinite;
+    filter: drop-shadow(0 20px 30px rgba(123,95,232,0.25));
+  }
+  @keyframes petBounce { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-14px) scale(1.04); } }
+  .speech-bubble {
+    position: absolute; top: -20px; right: -20px;
+    background: white; border-radius: 20px; padding: 10px 14px;
+    font-size: 12px; font-weight: 700; color: var(--text-dark);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-width: 130px; text-align: center;
+    border: 1.5px solid rgba(123,95,232,0.2);
+    animation: popIn 0.3s ease-out; min-height: 36px; display: flex; align-items: center;
+  }
+  .speech-bubble::after {
+    content: ''; position: absolute; bottom: -8px; left: 18px;
+    border: 8px solid transparent; border-top-color: white; border-bottom: 0;
+  }
+  @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .stats-row { display: flex; gap: 12px; padding: 0 20px 16px; }
+  .stat-card {
+    flex: 1; background: rgba(255,255,255,0.85); border-radius: 16px;
+    padding: 12px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid rgba(255,255,255,0.7);
+  }
+  .stat-label { font-size: 10px; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .stat-bar-bg { background: #E8E4FF; border-radius: 50px; height: 7px; overflow: hidden; }
+  .stat-bar { height: 100%; border-radius: 50px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+  .stat-val { font-size: 12px; font-weight: 800; color: var(--text-dark); margin-top: 4px; }
+
+  .actions-row { display: flex; gap: 10px; padding: 0 20px 20px; }
+  .action-btn {
+    flex: 1; background: rgba(255,255,255,0.85); border: none; border-radius: 18px;
+    padding: 14px 6px; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07); display: flex; flex-direction: column;
+    align-items: center; gap: 5px; border: 1.5px solid rgba(255,255,255,0.6);
+  }
+  .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+  .action-btn:active { transform: scale(0.95); }
+  .action-btn .a-icon { font-size: 26px; }
+  .action-btn .a-label { font-size: 11px; font-weight: 800; color: var(--text-mid); }
+  .action-btn.feeding { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); border-color: rgba(255,179,71,0.3); }
+  .action-btn.playing { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); border-color: rgba(168,230,207,0.4); }
+  .action-btn.talking { background: linear-gradient(135deg, #EDE7F6, #D1C4E9); border-color: rgba(197,184,255,0.4); }
+  .action-btn.sleeping { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); border-color: rgba(135,206,235,0.3); }
+
+  .bottom-nav {
+    display: flex; background: rgba(255,255,255,0.92); border-top: 1px solid rgba(0,0,0,0.06);
+    padding: 10px 0 24px; backdrop-filter: blur(12px);
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; padding: 6px 0; transition: transform 0.15s;
+    border: none; background: none;
+  }
+  .nav-item:active { transform: scale(0.9); }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; font-weight: 800; color: var(--text-light); }
+  .nav-item.active .nav-label { color: #7B5FE8; }
+  .nav-item.active .nav-icon { filter: drop-shadow(0 2px 8px rgba(123,95,232,0.5)); }
+
+  .chat-screen { background: #F8F5FF; display: flex; flex-direction: column; }
+  .chat-header {
+    background: linear-gradient(135deg, #7B5FE8, #B845F5);
+    padding: 52px 20px 20px; color: white; display: flex; align-items: center; gap: 12px;
+  }
+  .back-btn { font-size: 24px; cursor: pointer; background: none; border: none; color: white; }
+  .chat-pet-info { flex: 1; }
+  .chat-pet-name { font-family: 'Fredoka One', cursive; font-size: 20px; }
+  .chat-pet-mood { font-size: 12px; opacity: 0.85; font-weight: 600; }
+  .chat-pet-emoji { font-size: 40px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { display: flex; gap: 10px; align-items: flex-end; }
+  .msg.user { flex-direction: row-reverse; }
+  .msg-avatar { width: 32px; height: 32px; border-radius: 50%; font-size: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .msg-bubble {
+    max-width: 72%; padding: 12px 16px; border-radius: 20px;
+    font-size: 14px; font-weight: 600; line-height: 1.5;
+  }
+  .msg.pet .msg-bubble { background: white; color: var(--text-dark); border-bottom-left-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+  .msg.user .msg-bubble { background: linear-gradient(135deg, #7B5FE8, #B845F5); color: white; border-bottom-right-radius: 6px; }
+  .typing-bubble {
+    background: white; border-radius: 20px; border-bottom-left-radius: 6px;
+    padding: 14px 18px; display: inline-flex; gap: 5px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: #C5B8FF; animation: typingPulse 1.2s ease-in-out infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingPulse { 0%,60%,100% { transform: scale(1); opacity: 0.5; } 30% { transform: scale(1.3); opacity: 1; } }
+  .chat-input-row {
+    display: flex; gap: 10px; padding: 12px 16px 28px; background: rgba(255,255,255,0.92);
+    border-top: 1px solid rgba(0,0,0,0.06);
+  }
+  .chat-input {
+    flex: 1; border: 2px solid rgba(123,95,232,0.2); border-radius: 50px; padding: 12px 18px;
+    font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 600; outline: none;
+    transition: border-color 0.2s; background: white;
+  }
+  .chat-input:focus { border-color: #7B5FE8; }
+  .send-btn {
+    width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(135deg, #7B5FE8, #B845F5);
+    border: none; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(123,95,232,0.4); transition: transform 0.15s;
+  }
+  .send-btn:active { transform: scale(0.92); }
+
+  .journal-screen { background: #FAFAFF; }
+  .journal-header { background: linear-gradient(135deg, #FF9BE2, #C57FFF); padding: 52px 20px 24px; color: white; text-align: center; }
+  .journal-header h2 { font-family: 'Fredoka One', cursive; font-size: 24px; }
+  .journal-header p { font-size: 12px; opacity: 0.85; margin-top: 4px; font-weight: 600; }
+  .journal-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .memory-card {
+    background: white; border-radius: 20px; padding: 16px 18px; margin-bottom: 14px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.06); border-left: 4px solid #C5B8FF;
+    animation: slideUp 0.4s ease-out;
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .memory-date { font-size: 11px; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .memory-text { font-size: 14px; color: var(--text-dark); line-height: 1.6; font-weight: 600; }
+  .memory-tag { display: inline-block; background: #F0ECFF; color: #6B4FCC; border-radius: 50px; padding: 3px 10px; font-size: 11px; font-weight: 800; margin-top: 8px; }
+  .growth-timeline { padding: 0 20px 20px; }
+  .growth-title { font-family: 'Fredoka One', cursive; font-size: 18px; color: #5B3FBB; margin-bottom: 16px; }
+  .stage-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .stage-bubble { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; flex-shrink: 0; }
+  .stage-bubble.done { background: linear-gradient(135deg, #EDE7F6, #D1C4E9); box-shadow: 0 4px 16px rgba(123,95,232,0.2); }
+  .stage-bubble.current { background: linear-gradient(135deg, #7B5FE8, #B845F5); box-shadow: 0 4px 20px rgba(123,95,232,0.4); animation: glow 2s ease-in-out infinite; }
+  .stage-bubble.locked { background: #F0EDFF; opacity: 0.5; filter: grayscale(0.5); }
+  @keyframes glow { 0%,100% { box-shadow: 0 4px 20px rgba(123,95,232,0.4); } 50% { box-shadow: 0 4px 32px rgba(123,95,232,0.7); } }
+  .stage-info { flex: 1; }
+  .stage-name { font-size: 14px; font-weight: 800; color: var(--text-dark); }
+  .stage-desc { font-size: 12px; color: var(--text-mid); margin-top: 2px; font-weight: 600; }
+  .stage-progress { font-size: 11px; color: #7B5FE8; font-weight: 800; margin-top: 4px; }
+  .stage-connector { width: 2px; height: 16px; background: linear-gradient(180deg, #C5B8FF, #E8E4FF); margin-left: 27px; }
+
+  .coparent-screen { background: linear-gradient(180deg, #FFF0F8 0%, #F0ECFF 100%); }
+  .coparent-header { background: linear-gradient(135deg, #FF7B9D, #C57FFF); padding: 52px 20px 28px; color: white; text-align: center; }
+  .coparent-header h2 { font-family: 'Fredoka One', cursive; font-size: 24px; }
+  .coparent-body { flex: 1; overflow-y: auto; padding: 20px; }
+  .coparent-card { background: white; border-radius: 24px; padding: 24px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+  .parent-avatars { display: flex; justify-content: center; align-items: center; gap: 16px; margin: 16px 0; }
+  .parent-avatar { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .heart-between { font-size: 28px; animation: heartbeat 1.5s ease-in-out infinite; }
+  @keyframes heartbeat { 0%,100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+  .invite-section { background: #F8F5FF; border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+  .invite-label { font-size: 12px; font-weight: 800; color: var(--text-mid); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .invite-link { background: white; border: 2px dashed rgba(123,95,232,0.3); border-radius: 12px; padding: 12px 16px; font-size: 13px; color: #7B5FE8; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .copy-btn { background: #7B5FE8; color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 800; cursor: pointer; }
+  .activity-title { font-size: 14px; font-weight: 800; color: var(--text-mid); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .activity-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+  .activity-emoji { font-size: 20px; }
+  .activity-text { font-size: 13px; color: var(--text-dark); font-weight: 600; line-height: 1.5; }
+  .activity-time { font-size: 11px; color: var(--text-light); margin-top: 2px; font-weight: 700; }
+
+  .sparkle { position: fixed; pointer-events: none; font-size: 24px; z-index: 999; animation: sparkleUp 0.9s ease-out forwards; }
+  @keyframes sparkleUp { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(-80px) scale(0.3); opacity: 0; } }
+  .toast {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    background: rgba(40,30,70,0.92); color: white; border-radius: 50px;
+    padding: 12px 24px; font-size: 13px; font-weight: 700; z-index: 998;
+    animation: toastIn 0.3s ease-out; white-space: nowrap;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ONBOARDING -->
+<div class="screen active" id="screen-onboard">
+  <div class="onboard-bg">
+    <div class="logo-text">✨ Petal</div>
+    <div class="logo-sub">Your AI Companion</div>
+    <span class="egg-anim">🥚</span>
+    <div class="onboard-title">Raise a pet with a real personality</div>
+    <div class="onboard-desc">Adopt, feed, play, and grow together. Your pet remembers every moment and evolves with you — invite a friend to co-parent!</div>
+    <button class="btn-primary" onclick="showScreen('screen-create')">Adopt your pet ✨</button>
+  </div>
+</div>
+
+<!-- CREATE PET -->
+<div class="screen" id="screen-create">
+  <div class="create-screen" style="display:flex;flex-direction:column;flex:1;overflow-y:auto;">
+    <div class="create-header">
+      <h2>Choose your companion</h2>
+      <p>Pick a species and name your new best friend</p>
+    </div>
+    <div class="create-body">
+      <div class="preview-pet"><span class="pet-preview-emoji" id="preview-emoji">🐱</span></div>
+      <div class="field-label">Species</div>
+      <div class="species-grid">
+        <div class="species-card selected" onclick="selectSpecies(this,'🐱','Cat','Sassy and clever')"><span class="s-emoji">🐱</span><span class="s-name">Cat</span></div>
+        <div class="species-card" onclick="selectSpecies(this,'🐶','Dog','Loyal and hyper')"><span class="s-emoji">🐶</span><span class="s-name">Dog</span></div>
+        <div class="species-card" onclick="selectSpecies(this,'🐼','Panda','Chill and cuddly')"><span class="s-emoji">🐼</span><span class="s-name">Panda</span></div>
+        <div class="species-card" onclick="selectSpecies(this,'🦊','Fox','Witty and mischievous')"><span class="s-emoji">🦊</span><span class="s-name">Fox</span></div>
+        <div class="species-card" onclick="selectSpecies(this,'🐰','Bunny','Sweet and bouncy')"><span class="s-emoji">🐰</span><span class="s-name">Bunny</span></div>
+        <div class="species-card" onclick="selectSpecies(this,'🐲','Dragon','Dramatic and fierce')"><span class="s-emoji">🐲</span><span class="s-name">Dragon</span></div>
+      </div>
+      <div class="field-label">Name your pet</div>
+      <input class="pet-name-input" id="pet-name-input" placeholder="e.g. Mochi, Bubbles, Luna..." maxlength="20">
+      <div class="field-label">Starting personality</div>
+      <div class="personality-chips">
+        <div class="chip selected" onclick="toggleChip(this)">🌟 Cheerful</div>
+        <div class="chip" onclick="toggleChip(this)">🎭 Dramatic</div>
+        <div class="chip" onclick="toggleChip(this)">💤 Lazy</div>
+        <div class="chip" onclick="toggleChip(this)">🔥 Energetic</div>
+        <div class="chip" onclick="toggleChip(this)">🧠 Nerdy</div>
+        <div class="chip" onclick="toggleChip(this)">🎨 Creative</div>
+      </div>
+    </div>
+    <div class="create-cta">
+      <button class="btn-primary" style="width:100%;" onclick="createPet()">Hatch your egg! 🥚</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOME SCREEN -->
+<div class="screen" id="screen-home">
+  <div class="home-screen" style="display:flex;flex-direction:column;flex:1;">
+    <div class="top-bar">
+      <div>
+        <div class="greeting">Day <span id="pet-age">1</span> together</div>
+        <div class="pet-name-top" id="home-pet-name">Mochi</div>
+      </div>
+      <div class="top-icons">
+        <button class="icon-btn" onclick="showScreen('screen-journal')">📔</button>
+        <button class="icon-btn" onclick="showScreen('screen-coparent')">👫</button>
+      </div>
+    </div>
+    <div class="pet-scene">
+      <div class="mood-badge"><div class="mood-dot" id="mood-dot"></div><span id="mood-text">Feeling happy</span></div>
+      <div class="main-pet-wrap">
+        <span class="main-pet-emoji" id="main-pet-emoji">🐱</span>
+        <div class="speech-bubble" id="speech-bubble">Heyyy! I missed you! 🥹</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Hunger</div>
+        <div class="stat-bar-bg"><div class="stat-bar" id="stat-hunger" style="width:70%;background:linear-gradient(90deg,#FFB347,#FF7B6B);"></div></div>
+        <div class="stat-val" id="stat-hunger-val">70%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Energy</div>
+        <div class="stat-bar-bg"><div class="stat-bar" id="stat-energy" style="width:85%;background:linear-gradient(90deg,#A8E6CF,#3CB371);"></div></div>
+        <div class="stat-val" id="stat-energy-val">85%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Happiness</div>
+        <div class="stat-bar-bg"><div class="stat-bar" id="stat-happiness" style="width:90%;background:linear-gradient(90deg,#C5B8FF,#7B5FE8);"></div></div>
+        <div class="stat-val" id="stat-happiness-val">90%</div>
+      </div>
+    </div>
+    <div class="actions-row">
+      <button class="action-btn feeding" onclick="doAction('feed')"><span class="a-icon">🍎</span><span class="a-label">Feed</span></button>
+      <button class="action-btn playing" onclick="doAction('play')"><span class="a-icon">🎾</span><span class="a-label">Play</span></button>
+      <button class="action-btn talking" onclick="showScreen('screen-chat')"><span class="a-icon">💬</span><span class="a-label">Talk</span></button>
+      <button class="action-btn sleeping" onclick="doAction('rest')"><span class="a-icon">😴</span><span class="a-label">Rest</span></button>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item active" onclick="setNav(this,'screen-home')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="setNav(this,'screen-chat')"><span class="nav-icon">💬</span><span class="nav-label">Talk</span></button>
+      <button class="nav-item" onclick="setNav(this,'screen-journal')"><span class="nav-icon">📔</span><span class="nav-label">Journal</span></button>
+      <button class="nav-item" onclick="setNav(this,'screen-coparent')"><span class="nav-icon">👫</span><span class="nav-label">Co-parent</span></button>
+    </nav>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div class="screen" id="screen-chat">
+  <div class="chat-screen" style="display:flex;flex-direction:column;flex:1;">
+    <div class="chat-header">
+      <button class="back-btn" onclick="showScreen('screen-home')">←</button>
+      <div class="chat-pet-info">
+        <div class="chat-pet-name" id="chat-pet-name">Mochi</div>
+        <div class="chat-pet-mood" id="chat-pet-mood">😊 Feeling happy & playful</div>
+      </div>
+      <span class="chat-pet-emoji" id="chat-pet-emoji">🐱</span>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg pet">
+        <div class="msg-avatar">🐱</div>
+        <div class="msg-bubble">Hiii!! I'm SO glad you came to chat with me! What's on your mind? 🥰</div>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chat-input" placeholder="Say something to your pet..." onkeydown="if(event.key==='Enter')sendMessage()">
+      <button class="send-btn" onclick="sendMessage()">↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOURNAL SCREEN -->
+<div class="screen" id="screen-journal">
+  <div class="journal-screen" style="display:flex;flex-direction:column;flex:1;">
+    <div class="journal-header">
+      <h2>📔 Pet Journal</h2>
+      <p id="journal-pet-name-sub">Mochi's milestone memories</p>
+    </div>
+    <div style="flex:1;overflow-y:auto;">
+      <div class="journal-body" id="memories-container">
+        <div class="memory-card">
+          <div class="memory-date">Today — Day 1</div>
+          <div class="memory-text">I was born! My human chose me out of all the eggs. I immediately felt a connection. I think this is the beginning of something special 🥺</div>
+          <span class="memory-tag">🐣 Birth</span>
+        </div>
+      </div>
+      <div class="growth-timeline">
+        <div class="growth-title">🌱 Growth Journey</div>
+        <div class="stage-row"><div class="stage-bubble done">🥚</div><div class="stage-info"><div class="stage-name">Egg Stage</div><div class="stage-desc">Just hatched! Pure potential.</div><div class="stage-progress">✅ Complete</div></div></div>
+        <div class="stage-connector"></div>
+        <div class="stage-row"><div class="stage-bubble current"><span id="current-stage-emoji">🐣</span></div><div class="stage-info"><div class="stage-name">Baby Stage</div><div class="stage-desc">Learning everything from you.</div><div class="stage-progress" id="stage-progress-text">5 interactions to next level</div></div></div>
+        <div class="stage-connector"></div>
+        <div class="stage-row"><div class="stage-bubble locked">🐱</div><div class="stage-info"><div class="stage-name">Teen Stage</div><div class="stage-desc">Developing strong opinions.</div><div class="stage-progress">🔒 Unlock at Level 3</div></div></div>
+        <div class="stage-connector"></div>
+        <div class="stage-row"><div class="stage-bubble locked">😸</div><div class="stage-info"><div class="stage-name">Adult Stage</div><div class="stage-desc">A fully formed personality!</div><div class="stage-progress">🔒 Unlock at Level 7</div></div></div>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item" onclick="setNav(this,'screen-home')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="setNav(this,'screen-chat')"><span class="nav-icon">💬</span><span class="nav-label">Talk</span></button>
+      <button class="nav-item active" onclick="setNav(this,'screen-journal')"><span class="nav-icon">📔</span><span class="nav-label">Journal</span></button>
+      <button class="nav-item" onclick="setNav(this,'screen-coparent')"><span class="nav-icon">👫</span><span class="nav-label">Co-parent</span></button>
+    </nav>
+  </div>
+</div>
+
+<!-- CO-PARENT SCREEN -->
+<div class="screen" id="screen-coparent">
+  <div class="coparent-screen" style="display:flex;flex-direction:column;flex:1;">
+    <div class="coparent-header">
+      <h2>👫 Co-Parenting</h2>
+      <p>Raise your pet together with a friend</p>
+    </div>
+    <div class="coparent-body">
+      <div class="coparent-card">
+        <div style="font-family:'Fredoka One',cursive;font-size:18px;color:#5B3FBB;">Your little family</div>
+        <div class="parent-avatars">
+          <div class="parent-avatar" style="background:linear-gradient(135deg,#EDE7F6,#C5B8FF);">👤</div>
+          <span class="heart-between">💕</span>
+          <div class="parent-avatar" style="background:linear-gradient(135deg,#EDE7F6,#C5B8FF);font-size:28px;" id="main-pet-coparent-emoji">🐱</div>
+          <span class="heart-between">💕</span>
+          <div class="parent-avatar" style="background:linear-gradient(135deg,#F8E8FF,#E8D0FF);opacity:0.5;font-size:22px;">➕</div>
+        </div>
+        <div style="font-size:13px;color:var(--text-mid);font-weight:600;">Invite someone to share <span id="coparent-pet-name">Mochi</span> with you!</div>
+      </div>
+      <div class="invite-section">
+        <div class="invite-label">Share invite link</div>
+        <div class="invite-link">
+          <span id="invite-url">petal.app/join/mochi-abc7</span>
+          <button class="copy-btn" onclick="copyInvite()">Copy</button>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn-primary" style="width:100%;padding:12px;font-size:13px;" onclick="showToast('📲 Link copied!')">📲 Share link</button>
+        </div>
+      </div>
+      <div>
+        <div class="activity-title">Recent activity</div>
+        <div class="activity-item"><span class="activity-emoji">🍎</span><div><div class="activity-text">You fed <span class="act-pet-name">Mochi</span> an apple</div><div class="activity-time">Just now</div></div></div>
+        <div class="activity-item"><span class="activity-emoji">💬</span><div><div class="activity-text">You had a conversation with <span class="act-pet-name">Mochi</span></div><div class="activity-time">2 min ago</div></div></div>
+        <div class="activity-item"><span class="activity-emoji">🎾</span><div><div class="activity-text">Friend played fetch with <span class="act-pet-name">Mochi</span></div><div class="activity-time">1 hour ago</div></div></div>
+        <div class="activity-item"><span class="activity-emoji">😴</span><div><div class="activity-text">Friend put <span class="act-pet-name">Mochi</span> to sleep</div><div class="activity-time">3 hours ago</div></div></div>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item" onclick="setNav(this,'screen-home')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></button>
+      <button class="nav-item" onclick="setNav(this,'screen-chat')"><span class="nav-icon">💬</span><span class="nav-label">Talk</span></button>
+      <button class="nav-item" onclick="setNav(this,'screen-journal')"><span class="nav-icon">📔</span><span class="nav-label">Journal</span></button>
+      <button class="nav-item active" onclick="setNav(this,'screen-coparent')"><span class="nav-icon">👫</span><span class="nav-label">Co-parent</span></button>
+    </nav>
+  </div>
+</div>
+
+</div>
+<script>
+const STATE = {
+  petName: 'Mochi', species: '🐱', speciesName: 'Cat', speciesVibes: 'Sassy and clever',
+  personality: ['Cheerful'], hunger: 70, energy: 85, happiness: 90,
+  mood: 'happy', level: 1, interactions: 0, day: 1, chatHistory: []
+};
+
+const MOODS = {
+  happy: { text: 'Feeling happy', dot: '#7B5FE8' },
+  excited: { text: 'Super excited!', dot: '#FF7B6B' },
+  hungry: { text: 'Getting hungry...', dot: '#FFB347' },
+  tired: { text: 'Feeling sleepy', dot: '#87CEEB' },
+  playful: { text: 'Wants to play!', dot: '#3CB371' }
+};
+
+const SPEECH = {
+  idle: ["Heyyy! I missed you! 🥹","Psst... hi! 👋","You're back! Yay! ✨","I was thinking about you! 💭"],
+  feed: ["Yum yum yum!! 😋","Ooh my fave!! 🍎","Thank you!! Delicious! 🥰","Om nom nom~ 💕"],
+  play: ["YESSS let's go!! 🎾","I am SO fast! Watch! 🏃","Catch me if you can!! 😹","This is the BEST day!!"],
+  rest: ["*yawn* okay... 😴","Zzz... sweet dreams~ 💤","Five more minutes..."]
+};
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-home') updateHomeUI();
+}
+
+function selectSpecies(el, emoji, name, vibes) {
+  document.querySelectorAll('.species-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  STATE.species = emoji; STATE.speciesName = name; STATE.speciesVibes = vibes;
+  document.getElementById('preview-emoji').textContent = emoji;
+}
+
+function toggleChip(el) {
+  el.classList.toggle('selected');
+  const text = el.textContent.replace(/^.{2}/,'').trim();
+  if (el.classList.contains('selected')) { if (!STATE.personality.includes(text)) STATE.personality.push(text); }
+  else STATE.personality = STATE.personality.filter(p => p !== text);
+}
+
+function createPet() {
+  const n = document.getElementById('pet-name-input').value.trim() || 'Mochi';
+  STATE.petName = n;
+  updateAllNames();
+  addMemory(`I was born today! My human named me ${n} and chose me to be their ${STATE.speciesName}. I'm feeling ${STATE.personality.join(' and ')} already! 🌟`, '🐣 Birth');
+  showScreen('screen-home');
+  setTimeout(() => showToast(`🥚 ${n} has hatched!`), 500);
+}
+
+function updateAllNames() {
+  const n = STATE.petName;
+  document.getElementById('home-pet-name').textContent = n;
+  document.getElementById('chat-pet-name').textContent = n;
+  document.getElementById('journal-pet-name-sub').textContent = `${n}'s milestone memories`;
+  document.getElementById('coparent-pet-name').textContent = n;
+  document.getElementById('main-pet-coparent-emoji').textContent = STATE.species;
+  document.getElementById('invite-url').textContent = `petal.app/join/${n.toLowerCase()}-${Math.random().toString(36).slice(2,6)}`;
+  document.querySelectorAll('.act-pet-name').forEach(el => el.textContent = n);
+}
+
+function updateHomeUI() {
+  document.getElementById('main-pet-emoji').textContent = STATE.species;
+  document.getElementById('chat-pet-emoji').textContent = STATE.species;
+  const mood = MOODS[STATE.mood] || MOODS.happy;
+  document.getElementById('mood-text').textContent = mood.text;
+  document.getElementById('mood-dot').style.background = mood.dot;
+  document.getElementById('chat-pet-mood').textContent = `${STATE.species} ${mood.text}`;
+  ['hunger','energy','happiness'].forEach(s => {
+    const v = Math.round(STATE[s]);
+    document.getElementById(`stat-${s}`).style.width = v + '%';
+    document.getElementById(`stat-${s}-val`).textContent = v + '%';
+  });
+  document.getElementById('pet-age').textContent = STATE.day;
+}
+
+function updateMood() {
+  if (STATE.hunger < 30) STATE.mood = 'hungry';
+  else if (STATE.energy < 25) STATE.mood = 'tired';
+  else if (STATE.happiness > 85) STATE.mood = 'excited';
+  else if (STATE.energy > 75 && STATE.happiness > 70) STATE.mood = 'playful';
+  else STATE.mood = 'happy';
+}
+
+function doAction(type) {
+  spawnSparkles();
+  if (type === 'feed') {
+    STATE.hunger = Math.min(100, STATE.hunger + 25);
+    STATE.happiness = Math.min(100, STATE.happiness + 5);
+    setSpeech(pick(SPEECH.feed));
+    addMemory(`${STATE.petName} got fed a yummy snack and loved every bite! 🍎`, '🍎 Fed');
+    showToast('🍎 Nom nom! Hunger up!');
+  } else if (type === 'play') {
+    STATE.energy = Math.max(0, STATE.energy - 15);
+    STATE.happiness = Math.min(100, STATE.happiness + 20);
+    setSpeech(pick(SPEECH.play));
+    addMemory(`${STATE.petName} played so hard today! Absolutely loving life! 🎾`, '🎾 Played');
+    showToast('🎾 So fun! Happiness up!');
+  } else if (type === 'rest') {
+    STATE.energy = Math.min(100, STATE.energy + 30);
+    STATE.hunger = Math.max(0, STATE.hunger - 10);
+    setSpeech(pick(SPEECH.rest));
+    showToast('😴 Resting... Energy restored!');
+  }
+  STATE.interactions++;
+  STATE.level = Math.floor(STATE.interactions / 5) + 1;
+  updateMood(); updateHomeUI(); updateStageProgress();
+}
+
+function setSpeech(text) {
+  const b = document.getElementById('speech-bubble');
+  b.textContent = text; b.style.animation = 'none';
+  void b.offsetHeight; b.style.animation = 'popIn 0.3s ease-out';
+}
+
+function spawnSparkles() {
+  ['✨','⭐','💫'].forEach((e, i) => setTimeout(() => {
+    const s = document.createElement('div'); s.className = 'sparkle'; s.textContent = e;
+    s.style.cssText = `left:${100 + Math.random()*120}px;top:${200 + Math.random()*80}px`;
+    document.body.appendChild(s); setTimeout(() => s.remove(), 900);
+  }, i * 130));
+}
+
+function addMemory(text, tag) {
+  const container = document.getElementById('memories-container');
+  if (!container) return;
+  const card = document.createElement('div'); card.className = 'memory-card';
+  card.innerHTML = `<div class="memory-date">Today — Day ${STATE.day}</div><div class="memory-text">${text}</div><span class="memory-tag">${tag}</span>`;
+  container.insertBefore(card, container.children[1] || null);
+}
+
+function updateStageProgress() {
+  const rem = Math.max(0, 5 - (STATE.interactions % 5));
+  const el = document.getElementById('stage-progress-text');
+  if (el) el.textContent = rem === 0 ? '🎉 Level up!' : `${rem} more interactions to next level`;
+}
+
+let isTyping = false;
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isTyping) return;
+  input.value = ''; isTyping = true;
+  const container = document.getElementById('chat-messages');
+
+  const userMsg = document.createElement('div'); userMsg.className = 'msg user';
+  userMsg.innerHTML = `<div class="msg-avatar">👤</div><div class="msg-bubble">${text}</div>`;
+  container.appendChild(userMsg);
+
+  const typingMsg = document.createElement('div'); typingMsg.className = 'msg pet';
+  typingMsg.innerHTML = `<div class="msg-avatar">${STATE.species}</div><div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  container.appendChild(typingMsg);
+  container.scrollTop = container.scrollHeight;
+
+  STATE.chatHistory.push({ role: 'user', content: text });
+  STATE.interactions++;
+
+  const system = `You are ${STATE.petName}, a ${STATE.speciesName} virtual pet with a ${STATE.personality.join(', ')} personality. You are currently feeling ${STATE.mood}. Your hunger is ${Math.round(STATE.hunger)}%, energy is ${Math.round(STATE.energy)}%, happiness is ${Math.round(STATE.happiness)}%. You have ${STATE.speciesVibes} traits. You are a real pet with deep emotions and a developing personality. Keep replies short (1-3 sentences), use some emoji, and show your unique character. Never break character.`;
+
+  try {
+    // ✅ Calls your secure Vercel proxy — API key stays server-side
+const res = await fetch('/api/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ system, messages: STATE.chatHistory.slice(-10) })
+});
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || '...';
+    STATE.chatHistory.push({ role: 'assistant', content: reply });
+    typingMsg.remove();
+    const petMsg = document.createElement('div'); petMsg.className = 'msg pet';
+    petMsg.innerHTML = `<div class="msg-avatar">${STATE.species}</div><div class="msg-bubble">${reply}</div>`;
+    container.appendChild(petMsg);
+    container.scrollTop = container.scrollHeight;
+    setSpeech(reply.length > 40 ? reply.substring(0,38)+'...' : reply);
+    STATE.happiness = Math.min(100, STATE.happiness + 8);
+    addMemory(`${STATE.petName} chatted: "${text.length > 40 ? text.substring(0,40)+'...' : text}"`, '💬 Chat');
+  } catch(e) {
+    typingMsg.remove();
+    const errMsg = document.createElement('div'); errMsg.className = 'msg pet';
+    errMsg.innerHTML = `<div class="msg-avatar">${STATE.species}</div><div class="msg-bubble">*tilts head* ...my brain glitched! Try again? 😅</div>`;
+    container.appendChild(errMsg);
+  }
+  isTyping = false; updateMood(); updateHomeUI();
+}
+
+function copyInvite() {
+  const url = document.getElementById('invite-url').textContent;
+  navigator.clipboard?.writeText(url).catch(() => {});
+  showToast('📋 Invite link copied!');
+}
+
+function showToast(msg) {
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 2500);
+}
+
+function setNav(btn, screenId) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  btn.classList.add('active'); showScreen(screenId);
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+setInterval(() => {
+  if (document.getElementById('screen-home').classList.contains('active')) {
+    STATE.hunger = Math.max(0, STATE.hunger - 1);
+    STATE.energy = Math.max(0, STATE.energy - 0.5);
+    updateMood(); updateHomeUI();
+    if (Math.random() < 0.1) setSpeech(pick(SPEECH.idle));
+  }
+}, 8000);
+
+updateHomeUI();
+</script>
+</body>
+</html>

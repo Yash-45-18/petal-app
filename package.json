@@ -1,0 +1,9 @@
+{
+  "name": "petal-ai-pet",
+  "version": "1.0.0",
+  "description": "Petal - AI Virtual Pet App",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
